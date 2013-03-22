@@ -1,0 +1,98 @@
+###############################
+## OSEK/VDX Version 2.2.3
+###############################
+
+
+###############################
+構成
+  src
+    `- include
+	kernel.h
+    `- kernel
+	
+    `- tool
+	
+    `- 
+  doc
+    仕様書をいれる
+
+###############################
+機能仕様
+OS機能
+  - タスク管理
+  - 同期
+  - 割込み
+  - アラーム
+  - メッセージ
+  - エラー処理
+
+処理レベル
+  1. 割込みレベル
+    最も優先度が高い
+  2. スケジューラレベル
+    割込みよりも優先度が低い
+    タスクより優先度が高い
+  3. タスクレベル
+    処理レベルは最も低い
+    
+
+優先度ルール
+  - 値が大きいほど高優先度
+
+コンフォーマンスクラス
+  - T.B.D
+  
+タスクコンセプト
+  - 状態
+    running   : 実行状態
+    ready     : 実行可能状態
+    wait      : 待ち状態
+    suspended : 休止状態
+    
+  - 基本タスク
+  
+    +----------+-----------+---------+-----------+-------+
+    |          | suspended | ready   | running   | wait  |
+    +----------+-----------+---------+-----------+-------+
+    | activate | ready     | -       | -         | -     | * service call
+    | start    | -         | running | -         | -     | * scheduling
+    | preempt  | -         | -       | ready     | -     | * scheduling
+    | terminate| -         | -       | suspended | -     | * service call
+    +----------+-----------+---------+-----------+-------+
+  
+  - 拡張タスク
+    
+    +----------+-----------+---------+-----------+-------+
+    |          | suspended | ready   | running   | wait  |
+    +----------+-----------+---------+-----------+-------+
+    | activate | ready     | -       | -         | -     | * service call
+    | start    | -         | running | -         | -     | * scheduling
+    | wait     | -         | -       | wait      | -     | * service call
+    | release  | -         | -       | -         | ready | * interrupt or service call
+    | preempt  | -         | -       | ready     | -     | * scheduling
+    | terminate| -         | -       | suspended | -     | * service call
+    +----------+-----------+---------+-----------+-------+
+
+  - scheduling
+  
+    preemptive       : 優先度が高いタスクが優先
+    
+    non-preemptive   : 現在動作しているタスクが優先
+    
+    mixed-preemptive : preemptive and non-preemptive
+  
+  - application mode
+  
+    
+
+###############################
+コーディング規約
+void main()
+{
+    int a;
+
+    for () {
+	
+    }
+}
+
