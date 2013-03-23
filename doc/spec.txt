@@ -18,6 +18,7 @@
 
 ###############################
 機能仕様
+
 OS機能
   - タスク管理
   - 同期
@@ -27,14 +28,15 @@ OS機能
   - エラー処理
 
 処理レベル
-  1. 割込みレベル
+  - 割込みレベル
     最も優先度が高い
-  2. スケジューラレベル
+    
+  - スケジューラレベル
     割込みよりも優先度が低い
     タスクより優先度が高い
-  3. タスクレベル
+
+  - タスクレベル
     処理レベルは最も低い
-    
 
 優先度ルール
   - 値が大きいほど高優先度
@@ -54,10 +56,10 @@ OS機能
     +----------+-----------+---------+-----------+-------+
     |          | suspended | ready   | running   | wait  |
     +----------+-----------+---------+-----------+-------+
-    | activate | ready     | -       | -         | -     | * service call
+    | activate | ready     | -       | -         | -     | * system service
     | start    | -         | running | -         | -     | * scheduling
     | preempt  | -         | -       | ready     | -     | * scheduling
-    | terminate| -         | -       | suspended | -     | * service call
+    | terminate| -         | -       | suspended | -     | * system service
     +----------+-----------+---------+-----------+-------+
   
   - 拡張タスク
@@ -65,25 +67,194 @@ OS機能
     +----------+-----------+---------+-----------+-------+
     |          | suspended | ready   | running   | wait  |
     +----------+-----------+---------+-----------+-------+
-    | activate | ready     | -       | -         | -     | * service call
+    | activate | ready     | -       | -         | -     | * system service
     | start    | -         | running | -         | -     | * scheduling
-    | wait     | -         | -       | wait      | -     | * service call
-    | release  | -         | -       | -         | ready | * interrupt or service call
+    | wait     | -         | -       | wait      | -     | * system service
+    | release  | -         | -       | -         | ready | * interrupt or system service
     | preempt  | -         | -       | ready     | -     | * scheduling
-    | terminate| -         | -       | suspended | -     | * service call
+    | terminate| -         | -       | suspended | -     | * system service
     +----------+-----------+---------+-----------+-------+
 
-  - scheduling
+Scheduling policy
+
+  - Full preemptive  : 優先度が高いタスクが優先
+  - Non preemptive   : 現在動作しているタスクが優先
+  - Mixed preemptive : preemptive and non-preemptive
   
-    preemptive       : 優先度が高いタスクが優先
+割込み
+
+  - ISR category 1
+
+      スケジューリングを行わない（ISR1処理後、割込みが発生した時点から継続)
+      system serviceの呼び出し不可能
+      コンテキストの退避は手動
+      
+      {
+        code without any API calls
+      }
+      
+  - ISR category 2
     
-    non-preemptive   : 現在動作しているタスクが優先
+    スケジューリングが発生
+    system serviceの呼び出し可能
+    コンテキストの退避は自動
     
-    mixed-preemptive : preemptive and non-preemptive
+    ISR(isr_name)
+    {
+      code with API calls
+    }
+
+  ※ 必ず ISR category 1 の割込みが優先されること
+
+Event
+
+  イベント機能は、タスク-タスク間またはタスク-割込み間で同期を取る
+
+  - イベント待ち
+    
+    拡張タスクのみ使用可能(Wait状態になれる)
+    
+  - イベントクリア
+
+    起動時にOSが全イベントをクリアする。
+    その他クリアする場合は、system serviceを呼び出す。
+
+  - イベントセット
+
+    system serviceを呼び出す。
+    (基本タスク、拡張タスク、ISR category 2 で使用可能)
+
+  - 最大イベント数
+
+    32 / タスク毎
+
+リソース管理
+
+  T.B.D
+
+アラーム
+
+  - 絶対アラーム
+  - 相対アラーム
+  - シングルアラーム
+  - 周期アラーム
+
+メッセージ
+
+  - OSEK COM
+
+エラー処理およびデバッグ機能
+
+  - Hook
   
-  - application mode
+    特定の処理タイミングで、ユーザへ
+    コンテキストは、タスクまたはISR2のコンテキスト
+    System services を呼ぶことが可能 (一部制限あり)
   
+    ※ StartupHook/ShutdownHook : システムの起動・停止
+       PreTaskHook/PostTaskHook : タスク切り替えの前後
+
+    System services が E_OK 以外を返す時に呼ばれる
+    ErrorHook内で、さらに Error が発生しても2度目の ErrorHook は呼ばれない
+    実行中は ISR2 は禁止
+
+    ※ ErrorHook                : システムサービスのエラー
+
+  - Error
+  
+    エラーの種類を知ることができる System services
     
+    ※ OSErrorGetServiceId : エラーが発生した情報を取得
+       OSError_xxx_yyy     : System service のパラメータ取得
+                             xxx System service の名前
+                             yyy System service のパラメータ
+    
+    System service のエラーについて
+    
+      標準(Standard)エラー : 動的にチェックすべきエラー
+      拡張(Extended)エラー : リリース前までにチェックすべてエラー
+    
+    OS Error について
+    
+      Application Errors : OS に要求したサービスの実行時エラー (継続)
+      Fatal Errors       : OS 内部の致命的エラー (中断 → OS停止)
+    
+型
+
+  - StatusType
+  
+    +-----------------+---+
+    | E_OK            | 0 |
+    | E_OS_ACCESS     | 1 |
+    | E_OS_CALLEVEL   | 2 |
+    | E_OS_ID         | 3 |
+    | E_OS_LIMIT      | 4 |
+    | E_OS_NOFUNC     | 5 |
+    | E_OS_RESOURCE   | 6 |
+    | E_OS_STATE      | 7 |
+    | E_OS_VALUE      | 8 |
+    +-----------------+---+
+    
+  - TaskType         : タスクのID
+  - TaskRefType      : TaskType のポインタ
+  - TaskStateType    : タスクの状態
+  
+    +--------------+----------+
+    | RUNNING      | 実行     |
+    | WAITING      | 待ち     |
+    | READY        | 実行可能 |
+    | SUSPENDED    | 停止     |
+    | INVALID_TASK | 未定義   |
+    +--------------+----------+
+  
+  - TaskStateRefType : TaskStateType のポインタ
+  - ResourceType
+  - EventMaskType
+  - 
+  
+静的マクロ
+
+  - DeclareTask(<TaskIdentifier>)
+  - DeclareResource(<ResourceIdentifier>)
+  - 
+
+System services
+
+  [Task management]
+
+  - StatusType ActiveTask(TaskType <TaskID>)
+  - StatusType TerminateTask(void)
+  - StatusType ChainTask(TaskType <TaskID>)
+  - StatusType Schedule(void)
+  - StatusType GetTaskID(TaskRefType <TaskID>)
+  - StatusType GetTaskState(TaskType <TaskID>, TaskStateRefType <State>)
+  
+    TASK (TaskName)
+    {
+    }
+  
+  [Interrupt handling]
+  
+  - void EnableAllInterrupts(void)
+  - void DisableAllInterrupts(void)
+  - void ResumeAllInterrupts(void)
+  - void SuspendAllInterrupts(void)
+  - void ResumeOSInterrupts(void)
+  - void SuspendOSInterrupts(void)
+  
+    ISR (FuncName)
+    {
+    }
+
+  [Resource management]
+  
+  - StatusType GetResource(ResourceType <ResID>)
+  - StatusType ReleaseResource(ResourceType <ResID>)
+  
+  [Event control]
+
+  - 
+
 
 ###############################
 コーディング規約
