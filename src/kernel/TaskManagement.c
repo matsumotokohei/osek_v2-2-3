@@ -35,6 +35,7 @@ static void insert_ready_queue( TaskType TaskID )
 	for ( i = 0; i < 128; i++ ) {
 		if ( queue[ i ] == INVALID_TASK ) {
 			queue[ i ] = TaskID;
+			break;
 		}
 		else if ( tcb[ queue[ i ] ].priority < tcb[ TaskID ].priority ) {
 			for ( j=i + 1; j < 128; j++ ) {
