@@ -1,5 +1,4 @@
 #include <kernel.h>
-#include <task.h>
 
 struct TCB tcb[ 128 ] = {0};
 struct TCB * current = 0;
